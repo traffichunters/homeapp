@@ -166,10 +166,190 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
               ),
             ),
             const SizedBox(height: 16),
-            Text('Contacts section - Coming Soon'),
+            
+            // Contact selection options
+            Row(
+              children: [
+                Expanded(
+                  child: RadioListTile<bool>(
+                    title: const Text('Select Existing'),
+                    value: false,
+                    groupValue: _showNewContactForm,
+                    onChanged: (value) {
+                      setState(() {
+                        _showNewContactForm = false;
+                        _selectedContact = null;
+                      });
+                    },
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                Expanded(
+                  child: RadioListTile<bool>(
+                    title: const Text('Add New'),
+                    value: true,
+                    groupValue: _showNewContactForm,
+                    onChanged: (value) {
+                      setState(() {
+                        _showNewContactForm = true;
+                        _selectedContact = null;
+                      });
+                    },
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 16),
+            
+            if (!_showNewContactForm)
+              _buildExistingContactSelection()
+            else
+              _buildNewContactForm(),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildExistingContactSelection() {
+    if (_existingContacts.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.info_outline, color: Colors.grey[600]),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'No existing contacts. Add your first contact using "Add New".',
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return DropdownButtonFormField<Contact>(
+      value: _selectedContact,
+      decoration: const InputDecoration(
+        labelText: 'Select Contact',
+        border: OutlineInputBorder(),
+      ),
+      items: _existingContacts.map((contact) {
+        return DropdownMenuItem<Contact>(
+          value: contact,
+          child: Text('${contact.fullName}${contact.companyName != null ? ' (${contact.companyName})' : ''}'),
+        );
+      }).toList(),
+      onChanged: (Contact? value) {
+        setState(() {
+          _selectedContact = value;
+        });
+      },
+    );
+  }
+
+  Widget _buildNewContactForm() {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _firstNameController,
+                decoration: const InputDecoration(
+                  labelText: 'First Name *',
+                  border: OutlineInputBorder(),
+                ),
+                validator: _showNewContactForm ? (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'First name is required';
+                  }
+                  return null;
+                } : null,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: TextFormField(
+                controller: _lastNameController,
+                decoration: const InputDecoration(
+                  labelText: 'Last Name *',
+                  border: OutlineInputBorder(),
+                ),
+                validator: _showNewContactForm ? (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Last name is required';
+                  }
+                  return null;
+                } : null,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _companyNameController,
+          decoration: const InputDecoration(
+            labelText: 'Company Name',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _emailController,
+          decoration: const InputDecoration(
+            labelText: 'Email',
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.emailAddress,
+          validator: _showNewContactForm ? (value) {
+            if (value != null && value.trim().isNotEmpty) {
+              // Basic email validation
+              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                return 'Please enter a valid email address';
+              }
+            }
+            return null;
+          } : null,
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _phoneController,
+          decoration: const InputDecoration(
+            labelText: 'Phone Number',
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.phone,
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _urlController,
+          decoration: const InputDecoration(
+            labelText: 'Website URL',
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.url,
+          validator: _showNewContactForm ? (value) {
+            if (value != null && value.trim().isNotEmpty) {
+              // Basic URL validation
+              if (!RegExp(r'^https?://').hasMatch(value) && !value.startsWith('www.')) {
+                return 'Please enter a valid URL (e.g., https://example.com)';
+              }
+            }
+            return null;
+          } : null,
+        ),
+      ],
     );
   }
 
@@ -257,6 +437,8 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
 
     try {
       final now = DateTime.now();
+      
+      // Create and save project
       final project = Project(
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim().isEmpty 
@@ -267,7 +449,40 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
         tags: _tags.trim().isEmpty ? null : _tags.trim(),
       );
 
-      await _databaseHelper.insertProject(project);
+      final projectId = await _databaseHelper.insertProject(project);
+
+      // Handle contact if provided
+      int? contactId;
+      if (_showNewContactForm && _firstNameController.text.trim().isNotEmpty) {
+        // Create new contact
+        final contact = Contact(
+          firstName: _firstNameController.text.trim(),
+          lastName: _lastNameController.text.trim(),
+          companyName: _companyNameController.text.trim().isEmpty 
+              ? null 
+              : _companyNameController.text.trim(),
+          email: _emailController.text.trim().isEmpty 
+              ? null 
+              : _emailController.text.trim(),
+          phoneNumber: _phoneController.text.trim().isEmpty 
+              ? null 
+              : _phoneController.text.trim(),
+          url: _urlController.text.trim().isEmpty 
+              ? null 
+              : _urlController.text.trim(),
+          createdDate: now,
+        );
+        
+        contactId = await _databaseHelper.insertContact(contact);
+      } else if (!_showNewContactForm && _selectedContact != null) {
+        // Use existing contact
+        contactId = _selectedContact!.id;
+      }
+
+      // Link project and contact if contact exists
+      if (contactId != null) {
+        await _databaseHelper.linkProjectContact(projectId, contactId);
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
