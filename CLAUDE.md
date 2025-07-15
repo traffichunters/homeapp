@@ -4,38 +4,76 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a new homeapp project that has been initialized as a Git repository. The project structure and technology stack have not yet been established.
+HomeApp is a Flutter iOS application for home management and smart home control. The app features a splash screen and home screen with a clean, modern design using Material Design 3.
 
-## Development Setup
+## Technology Stack
 
-Since this is a new project, the development environment and build tools need to be set up based on the chosen technology stack.
+- **Flutter**: Cross-platform mobile development framework
+- **Dart**: Programming language
+- **iOS**: Primary target platform
+- **Material Design 3**: UI design system
 
-Common technology stacks for home applications include:
-- **Web Application**: React/Vue/Angular with Node.js backend
-- **Mobile Application**: React Native, Flutter, or native iOS/Android
-- **Desktop Application**: Electron, Tauri, or native frameworks
-- **IoT/Smart Home**: Python, Node.js, or embedded C/C++
+## Project Structure
 
-## Project Initialization Guidelines
-
-When setting up this project, consider:
-
-1. **Technology Stack Selection**: Choose appropriate frameworks and tools based on the target platform(s)
-2. **Project Structure**: Establish a clear directory structure (src/, tests/, docs/, etc.)
-3. **Package Management**: Set up package.json (Node.js), requirements.txt (Python), or equivalent
-4. **Build System**: Configure build tools, linting, and testing frameworks
-5. **Development Scripts**: Create common commands for build, test, lint, and development server
+```
+lib/
+├── main.dart              # App entry point and main widget
+└── screens/
+    ├── splash_screen.dart # Initial splash screen with HomeApp branding
+    └── home_screen.dart   # Main home screen with feature cards
+ios/                       # iOS-specific configuration
+android/                   # Android configuration (not actively used)
+```
 
 ## Common Commands
 
-*Commands will be added here once the project structure is established*
+### Development
+```bash
+# Get dependencies
+flutter pub get
+
+# Run on iOS simulator
+flutter run
+
+# Run on connected iOS device
+flutter run --release
+
+# Build iOS app
+flutter build ios
+
+# Clean build files
+flutter clean
+```
+
+### Testing
+```bash
+# Run all tests
+flutter test
+
+# Run tests with coverage
+flutter test --coverage
+```
+
+### Code Quality
+```bash
+# Analyze code
+flutter analyze
+
+# Format code
+dart format .
+```
+
+## iOS Configuration
+
+- Bundle identifier: `com.homeapp.homeapp`
+- Display name: "HomeApp"
+- Supports portrait and landscape orientations
+- Minimum iOS version: Defined by Flutter SDK defaults
 
 ## Architecture Notes
 
-*Architecture documentation will be added here as the project develops*
-
-## Development Notes
-
-- This project is in initial setup phase
-- Technology stack and architecture decisions should be documented here as they are made
-- Update this file with build commands, testing procedures, and architectural decisions as the project evolves
+- **Main App**: `HomeApp` widget serves as the root MaterialApp
+- **Navigation**: Simple navigation from splash screen to home screen using Navigator.pushReplacement
+- **Theming**: Custom blue theme based on Material Design 3 with Color(0xFF2196F3) as seed color
+- **State Management**: Uses basic StatefulWidget for splash screen timing, StatelessWidget for home screen
+- **UI Components**: Custom feature cards for home automation categories (Lights, Climate, Security)
