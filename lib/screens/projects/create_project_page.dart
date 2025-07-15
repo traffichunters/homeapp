@@ -28,11 +28,15 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
   final _urlController = TextEditingController();
   
   // Activity and other data
-  final List<Activity> _activities = [];
+  final List<Map<String, dynamic>> _activities = [];
   final List<Contact> _existingContacts = [];
   Contact? _selectedContact;
   bool _showNewContactForm = false;
   String _tags = '';
+  
+  // Activity form controllers
+  final _activityController = TextEditingController();
+  DateTime _selectedActivityDate = DateTime.now();
 
   @override
   void initState() {
@@ -62,6 +66,7 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
     _emailController.dispose();
     _phoneController.dispose();
     _urlController.dispose();
+    _activityController.dispose();
     super.dispose();
   }
 
@@ -367,11 +372,159 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
               ),
             ),
             const SizedBox(height: 16),
-            Text('Activities section - Coming Soon'),
+            
+            // Add activity form
+            _buildAddActivityForm(),
+            
+            const SizedBox(height: 16),
+            
+            // List of added activities
+            if (_activities.isNotEmpty) ...[
+              Text(
+                'Added Activities',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ..._activities.map((activity) => _buildActivityItem(activity)),
+            ],
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildAddActivityForm() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Add Activity',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 12),
+          
+          // Date picker
+          InkWell(
+            onTap: _selectActivityDate,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey[400]!),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.calendar_today, color: Colors.grey[600]),
+                  const SizedBox(width: 12),
+                  Text(
+                    '${_selectedActivityDate.day}/${_selectedActivityDate.month}/${_selectedActivityDate.year}',
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // Activity description
+          TextFormField(
+            controller: _activityController,
+            decoration: const InputDecoration(
+              labelText: 'Activity Description',
+              hintText: 'e.g., Met with contractor for initial estimate',
+              border: OutlineInputBorder(),
+            ),
+            maxLines: 2,
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // Add button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _addActivity,
+              icon: const Icon(Icons.add),
+              label: const Text('Add Activity'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActivityItem(Map<String, dynamic> activity) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          child: Icon(
+            Icons.event_note,
+            color: Colors.white,
+            size: 20,
+          ),
+        ),
+        title: Text(activity['activity']),
+        subtitle: Text(
+          '${DateTime.parse(activity['date']).day}/${DateTime.parse(activity['date']).month}/${DateTime.parse(activity['date']).year}',
+        ),
+        trailing: IconButton(
+          icon: const Icon(Icons.delete_outline),
+          onPressed: () => _removeActivity(activity),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _selectActivityDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedActivityDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+    );
+    
+    if (picked != null && picked != _selectedActivityDate) {
+      setState(() {
+        _selectedActivityDate = picked;
+      });
+    }
+  }
+
+  void _addActivity() {
+    if (_activityController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter an activity description')),
+      );
+      return;
+    }
+
+    setState(() {
+      _activities.add({
+        'date': _selectedActivityDate.toIso8601String(),
+        'activity': _activityController.text.trim(),
+      });
+      _activityController.clear();
+    });
+  }
+
+  void _removeActivity(Map<String, dynamic> activity) {
+    setState(() {
+      _activities.remove(activity);
+    });
   }
 
   Widget _buildDocumentsSection() {
@@ -482,6 +635,17 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
       // Link project and contact if contact exists
       if (contactId != null) {
         await _storageService.linkProjectContact(projectId, contactId);
+      }
+
+      // Save activities if any
+      for (final activityData in _activities) {
+        final activity = Activity(
+          projectId: projectId,
+          date: DateTime.parse(activityData['date']),
+          activity: activityData['activity'],
+          createdDate: now,
+        );
+        await _storageService.insertActivity(activity);
       }
 
       if (mounted) {
