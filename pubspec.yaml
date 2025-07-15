@@ -1,5 +1,5 @@
 name: homeapp
-description: "HomeApp - A Flutter iOS application for home management."
+description: "House Project Logger - A Flutter app for tracking house projects, maintenance, and renovations."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -34,6 +34,24 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  
+  # Database
+  sqflite: ^2.3.0
+  
+  # File handling
+  file_picker: ^8.0.0+1
+  path_provider: ^2.1.1
+  image: ^4.1.3
+  
+  # Utilities
+  shared_preferences: ^2.2.2
+  url_launcher: ^6.2.1
+  
+  # UI components
+  flutter_tags_x: ^1.0.3
+  
+  # Path utilities
+  path: ^1.8.3
 
 dev_dependencies:
   flutter_test:

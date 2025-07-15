@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
-import 'screens/splash_screen.dart';
+import 'screens/main_navigation.dart';
 
 void main() {
-  runApp(const HomeApp());
+  runApp(const HouseProjectLogger());
 }
 
-class HomeApp extends StatelessWidget {
-  const HomeApp({super.key});
+class HouseProjectLogger extends StatelessWidget {
+  const HouseProjectLogger({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'HomeApp',
+      title: 'House Project Logger',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF2196F3),
@@ -19,9 +19,8 @@ class HomeApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const SplashScreen(),
+      home: const MainNavigation(),
       debugShowCheckedModeBanner: false,
     );
   }
 }
-
