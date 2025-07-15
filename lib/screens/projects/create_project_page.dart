@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/project.dart';
 import '../../models/contact.dart';
 import '../../models/activity.dart';
-import '../../services/database_helper.dart';
+import '../../services/storage_service.dart';
 
 class CreateProjectPage extends StatefulWidget {
   const CreateProjectPage({super.key});
@@ -16,7 +16,7 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   
-  final DatabaseHelper _databaseHelper = DatabaseHelper();
+  final StorageService _storageService = StorageService();
   bool _isLoading = false;
   
   // Contact form controllers
@@ -42,7 +42,7 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
 
   Future<void> _loadExistingContacts() async {
     try {
-      final contacts = await _databaseHelper.getAllContacts();
+      final contacts = await _storageService.getAllContacts();
       setState(() {
         _existingContacts.clear();
         _existingContacts.addAll(contacts);
@@ -449,7 +449,7 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
         tags: _tags.trim().isEmpty ? null : _tags.trim(),
       );
 
-      final projectId = await _databaseHelper.insertProject(project);
+      final projectId = await _storageService.insertProject(project);
 
       // Handle contact if provided
       int? contactId;
@@ -473,7 +473,7 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
           createdDate: now,
         );
         
-        contactId = await _databaseHelper.insertContact(contact);
+        contactId = await _storageService.insertContact(contact);
       } else if (!_showNewContactForm && _selectedContact != null) {
         // Use existing contact
         contactId = _selectedContact!.id;
@@ -481,7 +481,7 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
 
       // Link project and contact if contact exists
       if (contactId != null) {
-        await _databaseHelper.linkProjectContact(projectId, contactId);
+        await _storageService.linkProjectContact(projectId, contactId);
       }
 
       if (mounted) {

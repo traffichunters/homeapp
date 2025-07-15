@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/project.dart';
-import '../../services/database_helper.dart';
+import '../../services/storage_service.dart';
 import 'single_project_page.dart';
 
 class ProjectsListPage extends StatefulWidget {
@@ -11,7 +11,7 @@ class ProjectsListPage extends StatefulWidget {
 }
 
 class _ProjectsListPageState extends State<ProjectsListPage> {
-  final DatabaseHelper _databaseHelper = DatabaseHelper();
+  final StorageService _storageService = StorageService();
   List<Project> _projects = [];
   bool _isLoading = true;
 
@@ -23,7 +23,7 @@ class _ProjectsListPageState extends State<ProjectsListPage> {
 
   Future<void> _loadProjects() async {
     try {
-      final projects = await _databaseHelper.getAllProjects();
+      final projects = await _storageService.getAllProjects();
       setState(() {
         _projects = projects;
         _isLoading = false;
