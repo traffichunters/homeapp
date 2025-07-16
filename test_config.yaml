@@ -1,0 +1,113 @@
+# HomeApp Test Configuration
+# This file contains configuration for E2E tests
+
+test_timeouts:
+  default: 30000  # 30 seconds
+  navigation: 10000  # 10 seconds
+  data_loading: 15000  # 15 seconds
+  animations: 5000  # 5 seconds
+
+test_data:
+  projects:
+    - title: "Kitchen Renovation"
+      description: "Complete kitchen remodel with new cabinets, countertops, and appliances"
+      tags: "kitchen, renovation, cabinets, countertops"
+    - title: "Bathroom Upgrade"
+      description: "Master bathroom renovation with new fixtures and tiling"
+      tags: "bathroom, fixtures, tiling"
+    - title: "Living Room Makeover"
+      description: "Modernize living room with new furniture and lighting"
+      tags: "living room, furniture, lighting"
+  
+  contacts:
+    - firstName: "John"
+      lastName: "Contractor"
+      email: "john@contractor.com"
+      phone: "555-123-4567"
+      company: "ABC Construction"
+      starRating: 4.5
+      hourlyRate: 75.0
+    - firstName: "Jane"
+      lastName: "Designer"
+      email: "jane@designer.com"
+      phone: "555-987-6543"
+      company: "XYZ Design Studio"
+      starRating: 5.0
+      hourlyRate: 100.0
+    - firstName: "Bob"
+      lastName: "Electrician"
+      email: "bob@electric.com"
+      phone: "555-555-5555"
+      company: "Electric Works"
+      starRating: 4.0
+      hourlyRate: 85.0
+
+  search_queries:
+    - "kitchen"
+    - "bathroom"
+    - "contractor"
+    - "renovation"
+    - "lighting"
+    - "fixtures"
+
+test_scenarios:
+  smoke_tests:
+    - app_launch
+    - navigation_flow
+    - basic_functionality
+  
+  functional_tests:
+    - project_creation
+    - contact_management
+    - search_functionality
+    - document_management
+    - bulk_operations
+  
+  performance_tests:
+    - app_startup_time
+    - navigation_performance
+    - data_loading_speed
+    - memory_usage
+  
+  ui_tests:
+    - theme_consistency
+    - responsive_design
+    - accessibility
+    - error_handling
+
+test_environments:
+  development:
+    debug_mode: true
+    test_data_reset: true
+    verbose_logging: true
+  
+  staging:
+    debug_mode: false
+    test_data_reset: false
+    verbose_logging: false
+  
+  production:
+    debug_mode: false
+    test_data_reset: false
+    verbose_logging: false
+
+device_configurations:
+  - name: "iPhone"
+    platform: "ios"
+    screen_size: "6.1 inch"
+    resolution: "390x844"
+  
+  - name: "iPad"
+    platform: "ios"
+    screen_size: "12.9 inch"
+    resolution: "1024x1366"
+  
+  - name: "Android Phone"
+    platform: "android"
+    screen_size: "6.0 inch"
+    resolution: "360x640"
+  
+  - name: "Android Tablet"
+    platform: "android"
+    screen_size: "10.0 inch"
+    resolution: "800x1280"
