@@ -105,6 +105,22 @@ class StorageService {
     return allContacts.where((c) => contactIds.contains(c.id)).toList();
   }
 
+  Future<List<Project>> getProjectsForContact(int contactId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final projectContactsJson = prefs.getString(_projectContactsKey);
+    
+    if (projectContactsJson == null) return [];
+    
+    final List<dynamic> projectContactsList = jsonDecode(projectContactsJson);
+    final projectIds = projectContactsList
+        .where((pc) => pc['contact_id'] == contactId)
+        .map((pc) => pc['project_id'] as int)
+        .toList();
+    
+    final allProjects = await getAllProjects();
+    return allProjects.where((p) => projectIds.contains(p.id)).toList();
+  }
+
   // Project-Contact linking
   Future<void> linkProjectContact(int projectId, int contactId) async {
     final prefs = await SharedPreferences.getInstance();
