@@ -37,7 +37,14 @@ class _SearchPageState extends State<SearchPage> {
   
   bool _isLoading = false;
   bool _showSuggestions = false;
+  bool _showFilters = false;
   String _searchQuery = '';
+  
+  // Filter states
+  List<String> _selectedFileTypes = [];
+  List<String> _selectedProjects = [];
+  DateTimeRange? _selectedDateRange;
+  String _selectedSortBy = 'relevance';
 
   @override
   void initState() {
@@ -159,31 +166,110 @@ class _SearchPageState extends State<SearchPage> {
     setState(() {
       // Search projects
       _filteredProjects = _projects.where((project) {
-        return project.title.toLowerCase().contains(searchLower) ||
+        bool matchesQuery = project.title.toLowerCase().contains(searchLower) ||
                (project.description?.toLowerCase().contains(searchLower) ?? false) ||
                (project.tags?.toLowerCase().contains(searchLower) ?? false);
+        
+        // Apply project filters
+        if (_selectedProjects.isNotEmpty) {
+          matchesQuery = matchesQuery && _selectedProjects.contains(project.title);
+        }
+        
+        // Apply date range filter
+        if (_selectedDateRange != null) {
+          matchesQuery = matchesQuery && 
+            project.updatedDate.isAfter(_selectedDateRange!.start) &&
+            project.updatedDate.isBefore(_selectedDateRange!.end.add(const Duration(days: 1)));
+        }
+        
+        return matchesQuery;
       }).toList();
 
       // Search contacts
       _filteredContacts = _contacts.where((contact) {
-        return contact.firstName.toLowerCase().contains(searchLower) ||
+        bool matchesQuery = contact.firstName.toLowerCase().contains(searchLower) ||
                contact.lastName.toLowerCase().contains(searchLower) ||
                contact.fullName.toLowerCase().contains(searchLower) ||
                (contact.companyName?.toLowerCase().contains(searchLower) ?? false) ||
                (contact.email?.toLowerCase().contains(searchLower) ?? false);
+        
+        // Apply project filters (show contacts associated with selected projects)
+        if (_selectedProjects.isNotEmpty) {
+          // This would need to be implemented based on contact-project associations
+          // For now, we'll keep all contacts if project filter is applied
+        }
+        
+        return matchesQuery;
       }).toList();
 
       // Search documents
       _filteredDocuments = _documents.where((document) {
-        return document.title.toLowerCase().contains(searchLower) ||
+        bool matchesQuery = document.title.toLowerCase().contains(searchLower) ||
                document.fileType.toLowerCase().contains(searchLower);
+        
+        // Apply file type filters
+        if (_selectedFileTypes.isNotEmpty) {
+          matchesQuery = matchesQuery && _selectedFileTypes.contains(document.fileType.toLowerCase());
+        }
+        
+        // Apply date range filter
+        if (_selectedDateRange != null) {
+          matchesQuery = matchesQuery && 
+            document.uploadDate.isAfter(_selectedDateRange!.start) &&
+            document.uploadDate.isBefore(_selectedDateRange!.end.add(const Duration(days: 1)));
+        }
+        
+        return matchesQuery;
       }).toList();
 
       // Search activities
       _filteredActivities = _activities.where((activity) {
-        return activity.activity.toLowerCase().contains(searchLower);
+        bool matchesQuery = activity.activity.toLowerCase().contains(searchLower);
+        
+        // Apply date range filter
+        if (_selectedDateRange != null) {
+          matchesQuery = matchesQuery && 
+            activity.date.isAfter(_selectedDateRange!.start) &&
+            activity.date.isBefore(_selectedDateRange!.end.add(const Duration(days: 1)));
+        }
+        
+        return matchesQuery;
       }).toList();
+      
+      // Apply sorting
+      _applySorting();
     });
+  }
+
+  void _applySorting() {
+    switch (_selectedSortBy) {
+      case 'date_desc':
+        _filteredProjects.sort((a, b) => b.updatedDate.compareTo(a.updatedDate));
+        _filteredDocuments.sort((a, b) => b.uploadDate.compareTo(a.uploadDate));
+        _filteredActivities.sort((a, b) => b.date.compareTo(a.date));
+        break;
+      case 'date_asc':
+        _filteredProjects.sort((a, b) => a.updatedDate.compareTo(b.updatedDate));
+        _filteredDocuments.sort((a, b) => a.uploadDate.compareTo(b.uploadDate));
+        _filteredActivities.sort((a, b) => a.date.compareTo(b.date));
+        break;
+      case 'name_asc':
+        _filteredProjects.sort((a, b) => a.title.compareTo(b.title));
+        _filteredContacts.sort((a, b) => a.fullName.compareTo(b.fullName));
+        _filteredDocuments.sort((a, b) => a.title.compareTo(b.title));
+        _filteredActivities.sort((a, b) => a.activity.compareTo(b.activity));
+        break;
+      case 'name_desc':
+        _filteredProjects.sort((a, b) => b.title.compareTo(a.title));
+        _filteredContacts.sort((a, b) => b.fullName.compareTo(a.fullName));
+        _filteredDocuments.sort((a, b) => b.title.compareTo(a.title));
+        _filteredActivities.sort((a, b) => b.activity.compareTo(a.activity));
+        break;
+      case 'relevance':
+      default:
+        // Keep original order (relevance by search algorithm)
+        break;
+    }
   }
 
   @override
@@ -192,6 +278,19 @@ class _SearchPageState extends State<SearchPage> {
       appBar: AppBar(
         title: const Text('Search'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          IconButton(
+            icon: Icon(
+              Icons.filter_list,
+              color: _hasActiveFilters() ? Theme.of(context).colorScheme.primary : null,
+            ),
+            onPressed: () {
+              setState(() {
+                _showFilters = !_showFilters;
+              });
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -248,6 +347,9 @@ class _SearchPageState extends State<SearchPage> {
             ),
           ),
           
+          // Filter panel
+          if (_showFilters) _buildFilterPanel(),
+          
           // Search results or suggestions
           Expanded(
             child: _isLoading
@@ -255,6 +357,212 @@ class _SearchPageState extends State<SearchPage> {
                 : _showSuggestions
                     ? _buildSuggestions()
                     : _buildSearchResults(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool _hasActiveFilters() {
+    return _selectedFileTypes.isNotEmpty ||
+           _selectedProjects.isNotEmpty ||
+           _selectedDateRange != null ||
+           _selectedSortBy != 'relevance';
+  }
+
+  List<String> _getAvailableFileTypes() {
+    return _documents.map((doc) => doc.fileType.toLowerCase()).toSet().toList()..sort();
+  }
+
+  List<String> _getAvailableProjects() {
+    return _projects.map((project) => project.title).toList()..sort();
+  }
+
+  Widget _buildFilterPanel() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(
+          top: BorderSide(color: Colors.grey.shade300),
+          bottom: BorderSide(color: Colors.grey.shade300),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with clear filters
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Filters',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              if (_hasActiveFilters())
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _selectedFileTypes.clear();
+                      _selectedProjects.clear();
+                      _selectedDateRange = null;
+                      _selectedSortBy = 'relevance';
+                    });
+                    if (_searchQuery.isNotEmpty) {
+                      _performSearch(_searchQuery);
+                    }
+                  },
+                  child: const Text('Clear all'),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          
+          // File Type Filter
+          Text(
+            'File Types',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            children: _getAvailableFileTypes().map((fileType) {
+              final isSelected = _selectedFileTypes.contains(fileType);
+              return FilterChip(
+                label: Text(fileType.toUpperCase()),
+                selected: isSelected,
+                onSelected: (selected) {
+                  setState(() {
+                    if (selected) {
+                      _selectedFileTypes.add(fileType);
+                    } else {
+                      _selectedFileTypes.remove(fileType);
+                    }
+                  });
+                  if (_searchQuery.isNotEmpty) {
+                    _performSearch(_searchQuery);
+                  }
+                },
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 16),
+          
+          // Project Filter
+          Text(
+            'Projects',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            children: _getAvailableProjects().map((project) {
+              final isSelected = _selectedProjects.contains(project);
+              return FilterChip(
+                label: Text(project),
+                selected: isSelected,
+                onSelected: (selected) {
+                  setState(() {
+                    if (selected) {
+                      _selectedProjects.add(project);
+                    } else {
+                      _selectedProjects.remove(project);
+                    }
+                  });
+                  if (_searchQuery.isNotEmpty) {
+                    _performSearch(_searchQuery);
+                  }
+                },
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 16),
+          
+          // Date Range Filter
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Date Range',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (_selectedDateRange != null)
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _selectedDateRange = null;
+                    });
+                    if (_searchQuery.isNotEmpty) {
+                      _performSearch(_searchQuery);
+                    }
+                  },
+                  child: const Text('Clear'),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () async {
+              final dateRange = await showDateRangePicker(
+                context: context,
+                firstDate: DateTime(2020),
+                lastDate: DateTime.now(),
+                initialDateRange: _selectedDateRange,
+              );
+              if (dateRange != null) {
+                setState(() {
+                  _selectedDateRange = dateRange;
+                });
+                if (_searchQuery.isNotEmpty) {
+                  _performSearch(_searchQuery);
+                }
+              }
+            },
+            icon: const Icon(Icons.date_range),
+            label: Text(
+              _selectedDateRange != null
+                  ? '${_formatDate(_selectedDateRange!.start)} - ${_formatDate(_selectedDateRange!.end)}'
+                  : 'Select date range',
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          // Sort By Filter
+          Text(
+            'Sort By',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          DropdownButton<String>(
+            value: _selectedSortBy,
+            isExpanded: true,
+            items: const [
+              DropdownMenuItem(value: 'relevance', child: Text('Relevance')),
+              DropdownMenuItem(value: 'date_desc', child: Text('Date (Newest first)')),
+              DropdownMenuItem(value: 'date_asc', child: Text('Date (Oldest first)')),
+              DropdownMenuItem(value: 'name_asc', child: Text('Name (A-Z)')),
+              DropdownMenuItem(value: 'name_desc', child: Text('Name (Z-A)')),
+            ],
+            onChanged: (value) {
+              if (value != null) {
+                setState(() {
+                  _selectedSortBy = value;
+                });
+                if (_searchQuery.isNotEmpty) {
+                  _performSearch(_searchQuery);
+                }
+              }
+            },
           ),
         ],
       ),
@@ -413,15 +721,68 @@ class _SearchPageState extends State<SearchPage> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // Results count
+        // Results count and active filters
         Padding(
           padding: const EdgeInsets.only(bottom: 16),
-          child: Text(
-            '$totalResults result${totalResults == 1 ? '' : 's'} found',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w500,
-              color: Colors.grey[600],
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '$totalResults result${totalResults == 1 ? '' : 's'} found',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey[600],
+                ),
+              ),
+              if (_hasActiveFilters()) ...[
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    if (_selectedFileTypes.isNotEmpty)
+                      Chip(
+                        label: Text('File types: ${_selectedFileTypes.join(', ')}'),
+                        onDeleted: () {
+                          setState(() {
+                            _selectedFileTypes.clear();
+                          });
+                          _performSearch(_searchQuery);
+                        },
+                      ),
+                    if (_selectedProjects.isNotEmpty)
+                      Chip(
+                        label: Text('Projects: ${_selectedProjects.join(', ')}'),
+                        onDeleted: () {
+                          setState(() {
+                            _selectedProjects.clear();
+                          });
+                          _performSearch(_searchQuery);
+                        },
+                      ),
+                    if (_selectedDateRange != null)
+                      Chip(
+                        label: Text('Date: ${_formatDate(_selectedDateRange!.start)} - ${_formatDate(_selectedDateRange!.end)}'),
+                        onDeleted: () {
+                          setState(() {
+                            _selectedDateRange = null;
+                          });
+                          _performSearch(_searchQuery);
+                        },
+                      ),
+                    if (_selectedSortBy != 'relevance')
+                      Chip(
+                        label: Text('Sort: $_selectedSortBy'),
+                        onDeleted: () {
+                          setState(() {
+                            _selectedSortBy = 'relevance';
+                          });
+                          _performSearch(_searchQuery);
+                        },
+                      ),
+                  ],
+                ),
+              ],
+            ],
           ),
         ),
         
