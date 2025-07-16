@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:path/path.dart' as path;
 import '../../models/project.dart';
 import '../../models/contact.dart';
 import '../../models/activity.dart';
+import '../../models/document.dart';
 import '../../services/storage_service.dart';
 
 class CreateProjectPage extends StatefulWidget {
@@ -26,6 +30,8 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _urlController = TextEditingController();
+  final _starRatingController = TextEditingController();
+  final _hourlyRateController = TextEditingController();
   
   // Activity and other data
   final List<Map<String, dynamic>> _activities = [];
@@ -37,6 +43,9 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
   // Activity form controllers
   final _activityController = TextEditingController();
   DateTime _selectedActivityDate = DateTime.now();
+  
+  // Document management
+  final List<Map<String, dynamic>> _selectedDocuments = [];
 
   @override
   void initState() {
@@ -66,6 +75,8 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
     _emailController.dispose();
     _phoneController.dispose();
     _urlController.dispose();
+    _starRatingController.dispose();
+    _hourlyRateController.dispose();
     _activityController.dispose();
     super.dispose();
   }
@@ -354,6 +365,50 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
             return null;
           } : null,
         ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _starRatingController,
+                decoration: const InputDecoration(
+                  labelText: 'Star Rating (1-5)',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+                validator: _showNewContactForm ? (value) {
+                  if (value != null && value.trim().isNotEmpty) {
+                    final rating = double.tryParse(value);
+                    if (rating == null || rating < 1 || rating > 5) {
+                      return 'Please enter a rating between 1 and 5';
+                    }
+                  }
+                  return null;
+                } : null,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: TextFormField(
+                controller: _hourlyRateController,
+                decoration: const InputDecoration(
+                  labelText: 'Hourly Rate (\$)',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+                validator: _showNewContactForm ? (value) {
+                  if (value != null && value.trim().isNotEmpty) {
+                    final rate = double.tryParse(value);
+                    if (rate == null || rate < 0) {
+                      return 'Please enter a valid rate';
+                    }
+                  }
+                  return null;
+                } : null,
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -541,11 +596,167 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
               ),
             ),
             const SizedBox(height: 16),
-            Text('Documents section - Coming Soon'),
+            
+            // File picker button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _pickDocuments,
+                icon: const Icon(Icons.attach_file),
+                label: const Text('Add Documents'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // Selected documents list
+            if (_selectedDocuments.isNotEmpty) ...[
+              Text(
+                'Selected Documents (${_selectedDocuments.length})',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ..._selectedDocuments.map((doc) => _buildDocumentItem(doc)),
+            ] else ...[
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey[300]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.grey[600]),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'No documents selected. Add documents like photos, PDFs, or other files related to your project.',
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildDocumentItem(Map<String, dynamic> doc) {
+    final String fileName = doc['name'];
+    final String fileExtension = path.extension(fileName).toLowerCase();
+    final int fileSize = doc['size'];
+    
+    // Get appropriate icon based on file extension
+    IconData getFileIcon() {
+      switch (fileExtension) {
+        case '.pdf':
+          return Icons.picture_as_pdf;
+        case '.jpg':
+        case '.jpeg':
+        case '.png':
+        case '.gif':
+          return Icons.image;
+        case '.doc':
+        case '.docx':
+          return Icons.description;
+        case '.xls':
+        case '.xlsx':
+          return Icons.table_chart;
+        case '.txt':
+          return Icons.text_snippet;
+        default:
+          return Icons.attach_file;
+      }
+    }
+    
+    // Format file size
+    String formatFileSize(int bytes) {
+      if (bytes < 1024) return '$bytes B';
+      if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+          child: Icon(
+            getFileIcon(),
+            color: Theme.of(context).colorScheme.primary,
+            size: 20,
+          ),
+        ),
+        title: Text(
+          fileName,
+          style: const TextStyle(fontWeight: FontWeight.w500),
+        ),
+        subtitle: Text(
+          '${formatFileSize(fileSize)} • ${fileExtension.replaceFirst('.', '').toUpperCase()}',
+        ),
+        trailing: IconButton(
+          icon: const Icon(Icons.remove_circle_outline),
+          onPressed: () => _removeDocument(doc),
+          tooltip: 'Remove document',
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickDocuments() async {
+    try {
+      final FilePickerResult? result = await FilePicker.platform.pickFiles(
+        allowMultiple: true,
+        type: FileType.any,
+        withData: true, // Enable data access for web compatibility
+        withReadStream: false,
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        setState(() {
+          for (final file in result.files) {
+            // Handle both mobile and web platforms
+            String filePath;
+            if (kIsWeb) {
+              // On web, use the file name as path since actual file paths aren't available
+              filePath = file.name;
+            } else {
+              // On mobile platforms, use the actual file path
+              filePath = file.path ?? file.name;
+            }
+            
+            _selectedDocuments.add({
+              'name': file.name,
+              'path': filePath,
+              'size': file.size,
+              'extension': file.extension ?? '',
+              'bytes': file.bytes, // Store file bytes for web compatibility
+            });
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error selecting documents: $e')),
+        );
+      }
+    }
+  }
+
+  void _removeDocument(Map<String, dynamic> doc) {
+    setState(() {
+      _selectedDocuments.remove(doc);
+    });
   }
 
   Widget _buildTagsSection() {
@@ -623,6 +834,12 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
           url: _urlController.text.trim().isEmpty 
               ? null 
               : _urlController.text.trim(),
+          starRating: _starRatingController.text.trim().isEmpty 
+              ? null 
+              : double.tryParse(_starRatingController.text.trim()),
+          hourlyRate: _hourlyRateController.text.trim().isEmpty 
+              ? null 
+              : double.tryParse(_hourlyRateController.text.trim()),
           createdDate: now,
         );
         
@@ -646,6 +863,19 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
           createdDate: now,
         );
         await _storageService.insertActivity(activity);
+      }
+
+      // Save documents if any
+      for (final docData in _selectedDocuments) {
+        final document = Document(
+          projectId: projectId,
+          title: docData['name'],
+          filePath: docData['path'],
+          fileSize: docData['size'],
+          fileType: docData['extension'],
+          uploadDate: now,
+        );
+        await _storageService.insertDocument(document);
       }
 
       if (mounted) {

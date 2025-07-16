@@ -6,6 +6,8 @@ class Contact {
   final String? email;
   final String? phoneNumber;
   final String? url;
+  final double? starRating;
+  final double? hourlyRate;
   final DateTime createdDate;
 
   Contact({
@@ -16,6 +18,8 @@ class Contact {
     this.email,
     this.phoneNumber,
     this.url,
+    this.starRating,
+    this.hourlyRate,
     required this.createdDate,
   });
 
@@ -30,6 +34,8 @@ class Contact {
       'email': email,
       'phone_number': phoneNumber,
       'url': url,
+      'star_rating': starRating,
+      'hourly_rate': hourlyRate,
       'created_date': createdDate.toIso8601String(),
     };
   }
@@ -43,6 +49,8 @@ class Contact {
       email: map['email'],
       phoneNumber: map['phone_number'],
       url: map['url'],
+      starRating: map['star_rating']?.toDouble(),
+      hourlyRate: map['hourly_rate']?.toDouble(),
       createdDate: DateTime.parse(map['created_date']),
     );
   }
@@ -55,6 +63,8 @@ class Contact {
     String? email,
     String? phoneNumber,
     String? url,
+    double? starRating,
+    double? hourlyRate,
     DateTime? createdDate,
   }) {
     return Contact(
@@ -65,6 +75,8 @@ class Contact {
       email: email ?? this.email,
       phoneNumber: phoneNumber ?? this.phoneNumber,
       url: url ?? this.url,
+      starRating: starRating ?? this.starRating,
+      hourlyRate: hourlyRate ?? this.hourlyRate,
       createdDate: createdDate ?? this.createdDate,
     );
   }

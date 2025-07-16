@@ -24,9 +24,18 @@ class DatabaseHelper {
     
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _createTables,
+      onUpgrade: _onUpgrade,
     );
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      // Add new columns to contacts table
+      await db.execute('ALTER TABLE contacts ADD COLUMN star_rating REAL');
+      await db.execute('ALTER TABLE contacts ADD COLUMN hourly_rate REAL');
+    }
   }
 
   Future<void> _createTables(Database db, int version) async {
@@ -52,6 +61,8 @@ class DatabaseHelper {
         email TEXT,
         phone_number TEXT,
         url TEXT,
+        star_rating REAL,
+        hourly_rate REAL,
         created_date TEXT NOT NULL
       )
     ''');
