@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/document.dart';
 import '../../services/storage_service.dart';
+import '../../services/thumbnail_service.dart';
 import 'single_document_page.dart';
 
 class DocumentsListPage extends StatefulWidget {
@@ -105,19 +106,10 @@ class _DocumentsListPageState extends State<DocumentsListPage> {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              // Document thumbnail/icon
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  _getFileIcon(document.fileType),
-                  size: 28,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+              // Document thumbnail
+              ThumbnailService.generateListThumbnail(
+                document.filePath,
+                document.fileType,
               ),
               const SizedBox(width: 16),
               // Document details
@@ -159,27 +151,6 @@ class _DocumentsListPageState extends State<DocumentsListPage> {
     );
   }
 
-  IconData _getFileIcon(String fileType) {
-    switch (fileType.toLowerCase()) {
-      case 'pdf':
-        return Icons.picture_as_pdf;
-      case 'jpg':
-      case 'jpeg':
-      case 'png':
-      case 'gif':
-        return Icons.image;
-      case 'doc':
-      case 'docx':
-        return Icons.description;
-      case 'xls':
-      case 'xlsx':
-        return Icons.table_chart;
-      case 'txt':
-        return Icons.text_snippet;
-      default:
-        return Icons.attach_file;
-    }
-  }
 
   String _formatFileSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
