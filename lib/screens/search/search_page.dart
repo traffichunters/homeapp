@@ -4,6 +4,7 @@ import '../../models/contact.dart';
 import '../../models/document.dart';
 import '../../models/activity.dart';
 import '../../services/storage_service.dart';
+import '../../services/search_history_service.dart';
 import '../projects/single_project_page.dart';
 import '../contacts/single_contact_page.dart';
 import '../documents/single_document_page.dart';
@@ -17,7 +18,9 @@ class SearchPage extends StatefulWidget {
 
 class _SearchPageState extends State<SearchPage> {
   final StorageService _storageService = StorageService();
+  final SearchHistoryService _searchHistoryService = SearchHistoryService();
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   
   List<Project> _projects = [];
   List<Contact> _contacts = [];
@@ -29,19 +32,26 @@ class _SearchPageState extends State<SearchPage> {
   List<Document> _filteredDocuments = [];
   List<Activity> _filteredActivities = [];
   
+  List<String> _searchHistory = [];
+  List<String> _searchSuggestions = [];
+  
   bool _isLoading = false;
+  bool _showSuggestions = false;
   String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _loadAllData();
+    _loadSearchHistory();
     _searchController.addListener(_onSearchChanged);
+    _searchFocusNode.addListener(_onFocusChanged);
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -75,11 +85,62 @@ class _SearchPageState extends State<SearchPage> {
     }
   }
 
+  Future<void> _loadSearchHistory() async {
+    final history = await _searchHistoryService.getSearchHistory();
+    setState(() {
+      _searchHistory = history;
+    });
+  }
+
+  void _onFocusChanged() {
+    setState(() {
+      _showSuggestions = _searchFocusNode.hasFocus && _searchQuery.isEmpty;
+    });
+  }
+
   void _onSearchChanged() {
     setState(() {
       _searchQuery = _searchController.text;
+      _showSuggestions = _searchFocusNode.hasFocus;
     });
-    _performSearch(_searchQuery);
+    
+    if (_searchQuery.isNotEmpty) {
+      _loadSuggestions(_searchQuery);
+      _performSearch(_searchQuery);
+    } else {
+      setState(() {
+        _filteredProjects = [];
+        _filteredContacts = [];
+        _filteredDocuments = [];
+        _filteredActivities = [];
+        _searchSuggestions = [];
+      });
+    }
+  }
+
+  Future<void> _loadSuggestions(String query) async {
+    if (query.trim().isEmpty) return;
+    
+    final suggestions = await _searchHistoryService.getSearchSuggestions(query);
+    setState(() {
+      _searchSuggestions = suggestions;
+    });
+  }
+
+  Future<void> _performSearchWithQuery(String query) async {
+    if (query.trim().isEmpty) return;
+    
+    setState(() {
+      _searchQuery = query;
+      _searchController.text = query;
+      _showSuggestions = false;
+    });
+    
+    // Add to search history
+    await _searchHistoryService.addSearchQuery(query);
+    await _loadSearchHistory();
+    
+    _performSearch(query);
   }
 
   void _performSearch(String query) {
@@ -139,63 +200,178 @@ class _SearchPageState extends State<SearchPage> {
             padding: const EdgeInsets.all(16),
             child: TextField(
               controller: _searchController,
+              focusNode: _searchFocusNode,
               decoration: InputDecoration(
                 hintText: 'Search projects, contacts, documents, activities...',
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                        },
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (_searchHistory.isNotEmpty)
+                            IconButton(
+                              icon: const Icon(Icons.history),
+                              onPressed: () {
+                                setState(() {
+                                  _showSuggestions = !_showSuggestions;
+                                });
+                              },
+                            ),
+                          IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() {
+                                _showSuggestions = false;
+                              });
+                            },
+                          ),
+                        ],
                       )
-                    : null,
+                    : (_searchHistory.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.history),
+                            onPressed: () {
+                              setState(() {
+                                _showSuggestions = !_showSuggestions;
+                              });
+                            },
+                          )
+                        : null),
                 border: const OutlineInputBorder(),
               ),
+              onSubmitted: (query) {
+                if (query.isNotEmpty) {
+                  _performSearchWithQuery(query);
+                }
+              },
             ),
           ),
           
-          // Search results
+          // Search results or suggestions
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : _buildSearchResults(),
+                : _showSuggestions
+                    ? _buildSuggestions()
+                    : _buildSearchResults(),
           ),
         ],
       ),
     );
   }
 
+  Widget _buildSuggestions() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // Current search suggestions
+        if (_searchQuery.isNotEmpty && _searchSuggestions.isNotEmpty) ...[
+          Text(
+            'Suggestions',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ..._searchSuggestions.map((suggestion) => _buildSuggestionItem(suggestion)),
+          const SizedBox(height: 16),
+        ],
+        
+        // Search history
+        if (_searchHistory.isNotEmpty) ...[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Recent searches',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              TextButton(
+                onPressed: () async {
+                  await _searchHistoryService.clearSearchHistory();
+                  await _loadSearchHistory();
+                },
+                child: const Text('Clear all'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ..._searchHistory.map((query) => _buildHistoryItem(query)),
+        ],
+        
+        // Empty state
+        if (_searchHistory.isEmpty && _searchSuggestions.isEmpty) ...[
+          const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.search,
+                  size: 64,
+                  color: Colors.grey,
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'Search across all content',
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.grey,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Projects • Contacts • Documents • Activities',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildSuggestionItem(String suggestion) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 4),
+      child: ListTile(
+        leading: const Icon(Icons.search, color: Colors.grey),
+        title: Text(suggestion),
+        trailing: const Icon(Icons.call_made, size: 16),
+        onTap: () => _performSearchWithQuery(suggestion),
+      ),
+    );
+  }
+
+  Widget _buildHistoryItem(String query) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 4),
+      child: ListTile(
+        leading: const Icon(Icons.history, color: Colors.grey),
+        title: Text(query),
+        trailing: IconButton(
+          icon: const Icon(Icons.close, size: 16),
+          onPressed: () async {
+            await _searchHistoryService.removeSearchQuery(query);
+            await _loadSearchHistory();
+          },
+        ),
+        onTap: () => _performSearchWithQuery(query),
+      ),
+    );
+  }
+
   Widget _buildSearchResults() {
     if (_searchQuery.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.search,
-              size: 64,
-              color: Colors.grey,
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Search across all content',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.grey,
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Projects • Contacts • Documents • Activities',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
-            ),
-          ],
-        ),
-      );
+      return _buildSuggestions();
     }
 
     final totalResults = _filteredProjects.length +
