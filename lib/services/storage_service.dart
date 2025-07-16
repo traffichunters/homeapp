@@ -153,6 +153,16 @@ class StorageService {
         .toList();
   }
 
+  Future<List<Activity>> getAllActivities() async {
+    final prefs = await SharedPreferences.getInstance();
+    final activitiesJson = prefs.getString(_activitiesKey) ?? '[]';
+    final List<dynamic> activities = jsonDecode(activitiesJson);
+    
+    return activities
+        .map((json) => Activity.fromMap(json))
+        .toList();
+  }
+
   // Documents
   Future<int> insertDocument(Document document) async {
     final prefs = await SharedPreferences.getInstance();
