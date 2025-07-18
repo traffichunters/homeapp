@@ -41,8 +41,8 @@ class _SearchPageState extends State<SearchPage> {
   String _searchQuery = '';
   
   // Filter states
-  List<String> _selectedFileTypes = [];
-  List<String> _selectedProjects = [];
+  final List<String> _selectedFileTypes = [];
+  final List<String> _selectedProjects = [];
   DateTimeRange? _selectedDateRange;
   String _selectedSortBy = 'relevance';
 

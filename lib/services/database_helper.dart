@@ -4,7 +4,6 @@ import '../models/project.dart';
 import '../models/contact.dart';
 import '../models/activity.dart';
 import '../models/document.dart';
-import '../models/project_contact.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();

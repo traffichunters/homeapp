@@ -46,12 +46,13 @@ The app has a simple structure with **list pages**, **single item pages**, **one
 - Save button to create project (saves project, contacts, documents, activities)
 - Cancel button to return to projects list
 
-### 2. Projects List Page → Single Project Page
+### 2. Projects List Page → Single Project Page (MAIN LANDING PAGE)
 ![project Page visual example ](inspiration/projects.png)
-**Route**: `/projects` (Home page)
+**Route**: `/projects` (Main Home page - first page users see)
 
-**Projects List Page**:
-- List of all projects in card format
+**Projects List Page** (Main Landing Page):
+- **Top of screen**: "Create New Project" button prominently displayed
+- **Main content**: List of all projects in card format (vertical scrollable list)
 - Each project card displays:
   - Project title
   - Brief description (truncated)
@@ -60,31 +61,38 @@ The app has a simple structure with **list pages**, **single item pages**, **one
   - Associated contacts (avatars or names)
   - Tags
   - Last activity date
-- Floating action button to create new project (goes to Create Project Page)
-- Tap project card to view Single Project Page
+- **Navigation**: Tap project card to view Single Project Page
+- **Primary action**: "Create New Project" button at top leads to Create Project Page
 
-**Single Project Page**:
+**Single Project Page** (Project Details):
 ![project full details visual example ](inspiration/project-detail.png)
 **Route**: `/project/:id`
-- Full project details:
-  - Complete title and description
+- **Layout**: Full-screen project details with clean, focused design
+- **Content sections**:
+  - Large project title and complete description
   - All associated contacts (tappable to go to Single Contact Page)
-  - All activities with dates
+  - All activities with dates in chronological order
   - All documents (tappable to go to Single Document Page)
-  - All tags
+  - All tags displayed as chips
   - Creation and last modified dates
+- **Navigation**: Back button to return to Projects List Page
 
 ### 3. Contacts List Page → Single Contact Page
 **Route**: `/contacts`
 ![project contact list visual example ](contact-list.png)
 **Contacts List Page**:
-- List of all contacts in scrollable view
-- Each contact item displays:
-  - Full name (first name + last name)
-  - Company name (if available)
-  - Phone number
-  - Email address
-- Tap contact to view Single Contact Page
+- **Layout**: Card-based design with clean, modern UI
+- **List format**: Vertical scrollable list of contact cards
+- Each contact card displays:
+  - **Left side**: Contact avatar/icon (circular icon with person/company symbol)
+  - **Main content area**:
+    - Full name (first name + last name) as primary text
+    - Company name (if available) as secondary text
+    - Star rating display (5-star system)
+    - Price/rate information (if applicable)
+  - **Right side**: Action button (e.g., "Buy" or contact button)
+- **Visual design**: Cards with subtle shadows, clean typography, and consistent spacing
+- **Interaction**: Tap anywhere on contact card to view Single Contact Page
 
 **Single Contact Page**:
 **Route**: `/contact/:id`
@@ -144,12 +152,17 @@ The app has a simple structure with **list pages**, **single item pages**, **one
 - Result count indicator
 
 ## Navigation Structure
+- **Main Landing Page**: Projects List Page (first page users see when opening app)
+- **Primary Action**: "Create New Project" button at top of Projects List Page
 - Bottom navigation bar with:
-  - Projects (home)
+  - Projects (main home tab - default selected)
   - Contacts
   - Documents
   - Search
-- Floating action button on Projects page only (goes to Create Project Page)
+- **Project Flow**:
+  1. App opens → Projects List Page (main landing page)
+  2. Tap "Create New Project" button → Create Project Page
+  3. Tap any project card → Single Project Page
 - Proper back navigation between list and single pages
 
 ## Technical Requirements

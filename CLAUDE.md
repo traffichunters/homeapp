@@ -77,3 +77,6 @@ dart format .
 - **Theming**: Custom blue theme based on Material Design 3 with Color(0xFF2196F3) as seed color
 - **State Management**: Uses basic StatefulWidget for splash screen timing, StatelessWidget for home screen
 - **UI Components**: Custom feature cards for home automation categories (Lights, Climate, Security)
+
+## Development Workflow
+- Always do a git push after finishing with Todo list item 
