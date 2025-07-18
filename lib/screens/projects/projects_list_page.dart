@@ -10,10 +10,10 @@ class ProjectsListPage extends StatefulWidget {
   const ProjectsListPage({super.key});
 
   @override
-  State<ProjectsListPage> createState() => _ProjectsListPageState();
+  State<ProjectsListPage> createState() => ProjectsListPageState();
 }
 
-class _ProjectsListPageState extends State<ProjectsListPage> {
+class ProjectsListPageState extends State<ProjectsListPage> {
   final StorageService _storageService = StorageService();
   List<Project> _projects = [];
   final Map<int, List<Contact>> _projectContacts = {};
@@ -30,6 +30,7 @@ class _ProjectsListPageState extends State<ProjectsListPage> {
   Future<void> _loadProjects() async {
     try {
       final projects = await _storageService.getAllProjects();
+      print('DEBUG: Loaded ${projects.length} projects');
       
       // Load related data for each project
       for (final project in projects) {
@@ -49,6 +50,7 @@ class _ProjectsListPageState extends State<ProjectsListPage> {
         _isLoading = false;
       });
     } catch (e) {
+      print('DEBUG: Error loading projects: $e');
       setState(() {
         _isLoading = false;
       });
@@ -70,29 +72,28 @@ class _ProjectsListPageState extends State<ProjectsListPage> {
     await _loadProjects();
   }
 
+  // Public method to refresh projects from external callers
+  Future<void> refreshProjects() async {
+    await _refreshProjects();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('House Projects'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _projects.isEmpty
-              ? _buildEmptyState()
-              : RefreshIndicator(
-                  onRefresh: _refreshProjects,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _projects.length,
-                    itemBuilder: (context, index) {
-                      final project = _projects[index];
-                      return _buildProjectCard(project);
-                    },
-                  ),
+    return _isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : _projects.isEmpty
+            ? _buildEmptyState()
+            : RefreshIndicator(
+                onRefresh: _refreshProjects,
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _projects.length,
+                  itemBuilder: (context, index) {
+                    final project = _projects[index];
+                    return _buildProjectCard(project);
+                  },
                 ),
-    );
+              );
   }
 
   Widget _buildEmptyState() {

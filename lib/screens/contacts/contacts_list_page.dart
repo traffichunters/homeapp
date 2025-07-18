@@ -7,10 +7,10 @@ class ContactsListPage extends StatefulWidget {
   const ContactsListPage({super.key});
 
   @override
-  State<ContactsListPage> createState() => _ContactsListPageState();
+  State<ContactsListPage> createState() => ContactsListPageState();
 }
 
-class _ContactsListPageState extends State<ContactsListPage> {
+class ContactsListPageState extends State<ContactsListPage> {
   final StorageService _storageService = StorageService();
   List<Contact> _contacts = [];
   bool _isLoading = true;

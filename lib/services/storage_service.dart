@@ -24,9 +24,12 @@ class StorageService {
     final newProject = project.copyWith(id: newId);
     projects.add(newProject);
     
-    await prefs.setString(_projectsKey, jsonEncode(
-      projects.map((p) => p.toMap()).toList()
-    ));
+    final projectsJson = jsonEncode(projects.map((p) => p.toMap()).toList());
+    await prefs.setString(_projectsKey, projectsJson);
+    
+    // Debug: verify the project was saved
+    final savedProjects = await getAllProjects();
+    print('DEBUG: Saved ${savedProjects.length} projects. New project ID: $newId');
     
     return newId;
   }

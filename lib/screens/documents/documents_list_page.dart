@@ -8,10 +8,10 @@ class DocumentsListPage extends StatefulWidget {
   const DocumentsListPage({super.key});
 
   @override
-  State<DocumentsListPage> createState() => _DocumentsListPageState();
+  State<DocumentsListPage> createState() => DocumentsListPageState();
 }
 
-class _DocumentsListPageState extends State<DocumentsListPage> {
+class DocumentsListPageState extends State<DocumentsListPage> {
   final StorageService _storageService = StorageService();
   List<Document> _documents = [];
   bool _isLoading = true;
